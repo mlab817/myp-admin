@@ -17,4 +17,10 @@ class Submit extends RowAction
         return $this->response()->success('Successfully submitted PAP.')->refresh();
     }
 
+    public function dialog()
+    {
+        $this->confirm(
+            'Confirm Submission',
+            'Submitted PAPs can no longer be edited unless returned by reviewer. Proceed only if you\'re sure.');
+    }
 }

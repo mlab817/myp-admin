@@ -2,29 +2,21 @@
 
 namespace App\Admin\Controllers;
 
-use App\Admin\Actions\Pap\Submit;
-use App\Models\Commodity;
-use App\Models\CommoditySystem;
-use App\Models\ImplementingUnit;
-use App\Models\Indicator;
-use App\Models\Location;
+use App\Admin\Actions\Pap\Restore;
 use App\Models\Pap;
-use App\Models\Prexc;
-use App\Models\Strategy;
-use App\Models\ValueChainSegment;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 
-class PapController extends AdminController
+class TrashController extends AdminController
 {
     /**
      * Title for current resource.
      *
      * @var string
      */
-    protected $title = 'Program/Activity/Project';
+    protected $title = 'Trash';
 
     /**
      * Make a grid builder.
@@ -35,32 +27,24 @@ class PapController extends AdminController
     {
         $grid = new Grid(new Pap());
 
-//        $grid->model()->where('user_id', auth()->id());
+        $grid->model()->onlyTrashed();
 
         $grid->actions(function ($actions) {
-            $actions->add(new Submit);
+            $actions->add(new Restore);
         });
 
-        $grid->column('strategy', __('Strategy'));
-        $grid->column('pap', __('Program/Activity/Project'));
-        $grid->column('brief_description', __('Brief Description'));
-        $grid->column('implementing_unit', __('Implementing Unit'));
-        $grid->column('prexc', __('PREXC/Function'));
-        $grid->column('commodity', __('Commodity'));
-        $grid->column('commodity_system', __('Commodity System'));
-        $grid->column('location', __('Location'));
-        $grid->column('value_chain_segment', __('Value Chain Segment'));
-        $grid->column('indicator', __('Indicator'));
-        $grid->column('total_cost', __('Total Cost'))->display(function() {
-            return $this->total_cost;
-        })->setAttributes(['class' => 'text-right']);
-        $grid->column('submitted', __('Submitted'))
+        $grid->column('strategy_id', __('Strategy'));
+        $grid->column('pap', __('Pap'));
+        $grid->column('implementing_unit_id', __('Implementing Unit'));
+        $grid->column('prexc_id', __('PREXC'));
+        $grid->column('commodity_id', __('Commodity'));
+        $grid->column('commodity_system_id', __('Commodity System'));
+        $grid->column('location_id', __('Location'));
+        $grid->column('value_chain_segment_id', __('Value chain segment'));
+        $grid->column('indicator_id', __('Indicator'));
+        $grid->column('deleted_at', __('Deleted at'))
             ->display(function () {
-                return $this->submitted_at ? 'Yes': 'No';
-            });
-        $grid->column('updated_at', __('Last updated'))
-            ->display(function () {
-                return optional($this->updated_at)->diffForHumans(null, null, true);
+                return optional($this->deleted_at)->diffForHumans(null, null, true);
             });
 
         return $grid;
@@ -100,10 +84,10 @@ class PapController extends AdminController
         $show->field('physical_target_2029', __('Physical target 2029'));
         $show->field('physical_target_2030', __('Physical target 2030'));
         $show->field('user_id', __('User id'));
-        $show->field('submitted', __('Submitted'));
-        $show->field('approved_regional', __('Approved regional'));
-        $show->field('approved_functional', __('Approved functional'));
-        $show->field('approved_national', __('Approved national'));
+        $show->field('submitted_at', __('Submitted at'));
+        $show->field('approved_regional_at', __('Approved regional at'));
+        $show->field('approved_functional_at', __('Approved functional at'));
+        $show->field('approved_national_at', __('Approved national at'));
         $show->field('created_at', __('Created at'));
         $show->field('updated_at', __('Updated at'));
         $show->field('deleted_at', __('Deleted at'));
@@ -120,26 +104,19 @@ class PapController extends AdminController
     {
         $form = new Form(new Pap());
 
-        $form->select('strategy_id', __('Strategy'))
-            ->options(Strategy::all()->pluck('name','id'));
-        $form->text('pap', __('Program/Activity/Project'));
-        $form->textarea('brief_description', __('Brief Description'));
-        $form->select('implementing_unit_id', __('Implementing Unit'))
-            ->options(ImplementingUnit::all()->pluck('name','id'));
-        $form->select('prexc_id', __('Prexc/Function'))
-            ->options(Prexc::all()->pluck('name','id'));
-        $form->select('commodity_id', __('Commodity'))
-            ->options(Commodity::all()->pluck('name', 'id'));
-        $form->select('commodity_system_id', __('Commodity system'))
-            ->options(CommoditySystem::all()->pluck('name', 'id'));
-        $form->select('location_id', __('Location'))
-            ->options(Location::all()->pluck('name', 'id'));
-        $form->select('value_chain_segment_id', __('Value chain segment'))
-            ->options(ValueChainSegment::all()->pluck('name', 'id'));
-        $form->select('indicator_id', __('Indicator'))
-            ->options(Indicator::all()->pluck('name','id'));
-        $form->text('unit_of_measure', __('Unit of Measure'));
-        $form->decimal('unit_cost', __('Unit Cost'))->default(0.00);
+        $form->text('uuid', __('Uuid'));
+        $form->number('strategy_id', __('Strategy id'));
+        $form->textarea('pap', __('Pap'));
+        $form->textarea('brief_description', __('Brief description'));
+        $form->number('implementing_unit_id', __('Implementing unit id'));
+        $form->number('prexc_id', __('Prexc id'));
+        $form->number('commodity_id', __('Commodity id'));
+        $form->number('commodity_system_id', __('Commodity system id'));
+        $form->number('location_id', __('Location id'));
+        $form->number('value_chain_segment_id', __('Value chain segment id'));
+        $form->number('indicator_id', __('Indicator id'));
+        $form->text('unit_of_measure', __('Unit of measure'));
+        $form->decimal('unit_cost', __('Unit cost'))->default(0.00);
         $form->decimal('physical_target_2022', __('Physical target 2022'))->default(0.0000);
         $form->decimal('physical_target_2023', __('Physical target 2023'))->default(0.0000);
         $form->decimal('physical_target_2024', __('Physical target 2024'))->default(0.0000);
@@ -149,10 +126,11 @@ class PapController extends AdminController
         $form->decimal('physical_target_2028', __('Physical target 2028'))->default(0.0000);
         $form->decimal('physical_target_2029', __('Physical target 2029'))->default(0.0000);
         $form->decimal('physical_target_2030', __('Physical target 2030'))->default(0.0000);
-
-//        $form->saving(function (Form $form) {
-//            $form->model()->user_id = auth()->id();
-//        });
+        $form->number('user_id', __('User id'));
+        $form->datetime('submitted_at', __('Submitted at'))->default(date('Y-m-d H:i:s'));
+        $form->datetime('approved_regional_at', __('Approved regional at'))->default(date('Y-m-d H:i:s'));
+        $form->datetime('approved_functional_at', __('Approved functional at'))->default(date('Y-m-d H:i:s'));
+        $form->datetime('approved_national_at', __('Approved national at'))->default(date('Y-m-d H:i:s'));
 
         return $form;
     }
